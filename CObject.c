@@ -1775,7 +1775,7 @@ CObjectList_Shrink(
     }
     a_Object->m_Value.u_List.m_ItemCapacity = a_Size;
     a_Object->m_Value.u_List.m_Items        = (CObject **) realloc(
-      a_Object->m_Value.u_List.m_Items,
+      (void *) a_Object->m_Value.u_List.m_Items,
       sizeof(CObject *) * a_Object->m_Value.u_List.m_ItemCapacity
     );
     assert(a_Object->m_Value.u_List.m_Items != NULL);
@@ -1795,7 +1795,7 @@ CObjectList_Grow(
   {
     a_Object->m_Value.u_List.m_ItemCapacity = a_Size;
     a_Object->m_Value.u_List.m_Items        = (CObject **) realloc(
-      a_Object->m_Value.u_List.m_Items,
+      (void *) a_Object->m_Value.u_List.m_Items,
       sizeof(CObject *) * a_Object->m_Value.u_List.m_ItemCapacity
     );
     assert(a_Object->m_Value.u_List.m_Items != NULL);
@@ -1832,7 +1832,7 @@ CObjectList_Fit(
     a_Object->m_Value.u_List.m_ItemCapacity
       = a_Object->m_Value.u_List.m_ItemCount;
     a_Object->m_Value.u_List.m_Items = (CObject **) realloc(
-      a_Object->m_Value.u_List.m_Items,
+      (void *) a_Object->m_Value.u_List.m_Items,
       sizeof(CObject *) * a_Object->m_Value.u_List.m_ItemCapacity
     );
     assert(a_Object->m_Value.u_List.m_Items != NULL);
