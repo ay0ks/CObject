@@ -2199,3 +2199,9 @@ CObject_Free(
     }
   }
 }
+
+void
+CObject_Initialize()
+{
+  crypto_shorthash_keygen(g_SObject_GetId_Key); 
+}
