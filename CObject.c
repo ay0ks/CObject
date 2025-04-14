@@ -1,3 +1,5 @@
+#include "CObject.h"
+
 #include <assert.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -13,111 +15,11 @@
 
 uint8_t g_CObject_GetId_Key[crypto_shorthash_KEYBYTES];
 
-typedef enum CObjectType : uint8_t
+void
+CObject_Initialize()
 {
-  k_ObjectBoolean = 1,
-  k_ObjectInteger,
-  k_ObjectFloating,
-  k_ObjectString,
-  k_ObjectPair,
-  k_ObjectList,
-  k_ObjectDictionary,
-  k_ObjectAny
-} CObjectType;
-
-typedef enum CObjectIntegerSignedness : uint8_t
-{
-  k_IntegerSigned   = 0,
-  k_IntegerUnsigned = 1
-} CObjectIntegerSignedness;
-
-typedef enum CObjectIntegerSize : uint8_t
-{
-  k_Integer8  = 0,
-  k_Integer16 = 1,
-  k_Integer32 = 2,
-  k_Integer64 = 3
-} CObjectIntegerSize;
-
-typedef enum CObjectFloatingSize : uint8_t
-{
-  k_Floating32 = 0,
-  k_Floating64 = 1,
-  k_Floating80 = 2
-} CObjectFloatingSize;
-
-typedef enum CObjectStringComparison : uint8_t
-{
-  k_CObjectStringComparisonLessThan,
-  k_CObjectStringComparisonEqual,
-  k_CObjectStringComparisonGreaterThan
-} CObjectStringComparison;
-
-typedef struct CObject
-{
-  CObjectType m_Type;
-
-  union
-  {
-    bool m_Boolean;
-
-    struct
-    {
-      CObjectIntegerSignedness m_Signedness;
-      CObjectIntegerSize       m_Size;
-
-      union
-      {
-        int8_t   m_Signed8;
-        int16_t  m_Signed16;
-        int32_t  m_Signed32;
-        int64_t  m_Signed64;
-        uint8_t  m_Unsigned8;
-        uint16_t m_Unsigned16;
-        uint32_t m_Unsigned32;
-        uint64_t m_Unsigned64;
-      } u_Integer;
-    } u_Integer;
-
-    struct
-    {
-      CObjectFloatingSize m_Size;
-
-      union
-      {
-        float       m_Floating32;
-        double      m_Floating64;
-        long double m_Floating80;
-      } u_Floating;
-    } u_Floating;
-
-    struct
-    {
-      uint64_t m_Size, m_Capacity;
-      wchar_t *m_String;
-    } u_String;
-
-    struct
-    {
-      CObjectType     m_LeftType, m_RightType;
-      struct CObject *m_Left, *m_Right;
-    } u_Pair;
-
-    struct
-    {
-      CObjectType      m_ItemType;
-      uint64_t         m_ItemCount, m_ItemCapacity;
-      struct CObject **m_Items;
-    } u_List;
-
-    struct
-    {
-      CObjectType     m_PairLeftType, m_PairRightType;
-      uint64_t        m_PairCount, m_PairCapacity;
-      struct CObject *m_Pairs;
-    } u_Dictionary;
-  } m_Value;
-} CObject;
+  crypto_shorthash_keygen(g_CObject_GetId_Key);
+}
 
 void
 CObject_GetType(
@@ -129,13 +31,6 @@ CObject_GetType(
   assert(a_Type != NULL);
   *a_Type = a_Object->m_Type;
 }
-
-void
-CObjectList_GetAt(
-  CObject  *a_Object,
-  uint64_t  a_Index,
-  CObject **a_Value
-);
 
 void
 CObject_GetId(
@@ -150,9 +45,13 @@ CObject_GetId(
   uint8_t  l_Hash[crypto_shorthash_BYTES];
   uint8_t  l_Type    = (uint8_t) a_Object->m_Type;
   uint64_t l_Address = (uint64_t) a_Object;
-  crypto_shorthash(l_Hash, (const uint8_t *) &l_Type, sizeof(l_Type), g_CObject_GetId_Key);
+  crypto_shorthash(
+    l_Hash, (const uint8_t *) &l_Type, sizeof(l_Type), g_CObject_GetId_Key
+  );
   l_Id = *(uint64_t *) l_Hash;
-  crypto_shorthash(l_Hash, (const uint8_t *) &l_Address, sizeof(l_Address), g_CObject_GetId_Key);
+  crypto_shorthash(
+    l_Hash, (const uint8_t *) &l_Address, sizeof(l_Address), g_CObject_GetId_Key
+  );
   l_Id  ^= *(uint64_t *) l_Hash;
   *a_Id  = l_Id;
 }
@@ -169,7 +68,9 @@ CObject_GetIdReasonable(
   uint64_t l_Id = 0;
   uint8_t  l_Hash[crypto_shorthash_BYTES];
   uint8_t  l_Type = (uint8_t) a_Object->m_Type;
-  crypto_shorthash(l_Hash, (const uint8_t *) &l_Type, sizeof(l_Type), g_CObject_GetId_Key);
+  crypto_shorthash(
+    l_Hash, (const uint8_t *) &l_Type, sizeof(l_Type), g_CObject_GetId_Key
+  );
   l_Id = *(uint64_t *) l_Hash;
   switch(a_Object->m_Type)
   {
@@ -232,10 +133,13 @@ CObject_GetIdReasonable(
       l_Id ^= (uint64_t) a_Object->m_Value.u_List.m_ItemType;
       l_Id ^= (uint64_t) a_Object->m_Value.u_List.m_ItemCount;
       l_Id ^= (uint64_t) a_Object->m_Value.u_List.m_ItemCapacity;
-      for(uint64_t l_Index = 0; l_Index < a_Object->m_Value.u_List.m_ItemCount; l_Index++)
+      for(uint64_t l_Index = 0; l_Index < a_Object->m_Value.u_List.m_ItemCount;
+          l_Index++)
       {
         uint64_t l_Id_;
-        CObject_GetIdReasonable(a_Object->m_Value.u_List.m_Items[l_Index], &l_Id_);
+        CObject_GetIdReasonable(
+          a_Object->m_Value.u_List.m_Items[l_Index], &l_Id_
+        );
         l_Id ^= l_Id_;
       }
       break;
@@ -246,10 +150,14 @@ CObject_GetIdReasonable(
       l_Id ^= (uint64_t) a_Object->m_Value.u_Dictionary.m_PairRightType;
       l_Id ^= (uint64_t) a_Object->m_Value.u_Dictionary.m_PairCount;
       l_Id ^= (uint64_t) a_Object->m_Value.u_Dictionary.m_PairCapacity;
-      for(uint64_t l_Index = 0; l_Index < a_Object->m_Value.u_Dictionary.m_PairCount; l_Index++)
+      for(uint64_t l_Index = 0;
+          l_Index < a_Object->m_Value.u_Dictionary.m_PairCount;
+          l_Index++)
       {
         uint64_t l_Id_;
-        CObject_GetIdReasonable(&a_Object->m_Value.u_Dictionary.m_Pairs[l_Index], &l_Id_);
+        CObject_GetIdReasonable(
+          &a_Object->m_Value.u_Dictionary.m_Pairs[l_Index], &l_Id_
+        );
         l_Id ^= l_Id_;
       }
       break;
@@ -262,9 +170,6 @@ CObject_GetIdReasonable(
   }
   *a_Id = l_Id;
 }
-
-void
-CObject_Free(CObject *a_Object);
 
 void
 CObjectBoolean_New(
@@ -351,11 +256,13 @@ CObjectInteger_New(
     {
       if(a_Signedness == k_IntegerSigned)
       {
-        l_Object->m_Value.u_Integer.u_Integer.m_Signed8 = va_arg(l_Args, int8_t);
+        l_Object->m_Value.u_Integer.u_Integer.m_Signed8
+          = va_arg(l_Args, int8_t);
       }
       else
       {
-        l_Object->m_Value.u_Integer.u_Integer.m_Unsigned8 = va_arg(l_Args, uint8_t);
+        l_Object->m_Value.u_Integer.u_Integer.m_Unsigned8
+          = va_arg(l_Args, uint8_t);
       }
       break;
     }
@@ -363,11 +270,13 @@ CObjectInteger_New(
     {
       if(a_Signedness == k_IntegerSigned)
       {
-        l_Object->m_Value.u_Integer.u_Integer.m_Signed16 = va_arg(l_Args, int16_t);
+        l_Object->m_Value.u_Integer.u_Integer.m_Signed16
+          = va_arg(l_Args, int16_t);
       }
       else
       {
-        l_Object->m_Value.u_Integer.u_Integer.m_Unsigned16 = va_arg(l_Args, uint16_t);
+        l_Object->m_Value.u_Integer.u_Integer.m_Unsigned16
+          = va_arg(l_Args, uint16_t);
       }
       break;
     }
@@ -375,11 +284,13 @@ CObjectInteger_New(
     {
       if(a_Signedness == k_IntegerSigned)
       {
-        l_Object->m_Value.u_Integer.u_Integer.m_Signed32 = va_arg(l_Args, int32_t);
+        l_Object->m_Value.u_Integer.u_Integer.m_Signed32
+          = va_arg(l_Args, int32_t);
       }
       else
       {
-        l_Object->m_Value.u_Integer.u_Integer.m_Unsigned32 = va_arg(l_Args, uint32_t);
+        l_Object->m_Value.u_Integer.u_Integer.m_Unsigned32
+          = va_arg(l_Args, uint32_t);
       }
       break;
     }
@@ -387,11 +298,13 @@ CObjectInteger_New(
     {
       if(a_Signedness == k_IntegerSigned)
       {
-        l_Object->m_Value.u_Integer.u_Integer.m_Signed64 = va_arg(l_Args, int64_t);
+        l_Object->m_Value.u_Integer.u_Integer.m_Signed64
+          = va_arg(l_Args, int64_t);
       }
       else
       {
-        l_Object->m_Value.u_Integer.u_Integer.m_Unsigned64 = va_arg(l_Args, uint64_t);
+        l_Object->m_Value.u_Integer.u_Integer.m_Unsigned64
+          = va_arg(l_Args, uint64_t);
       }
     }
   }
@@ -410,10 +323,15 @@ CObjectInteger_NewFrom(
   assert(a_Object != NULL);
   CObject *l_Object = malloc(sizeof(CObject));
   assert(l_Object != NULL);
-  l_Object->m_Type                         = k_ObjectInteger;
-  l_Object->m_Value.u_Integer.m_Signedness = a_Value->m_Value.u_Integer.m_Signedness;
-  l_Object->m_Value.u_Integer.m_Size       = a_Value->m_Value.u_Integer.m_Size;
-  memcpy(&l_Object->m_Value.u_Integer.u_Integer, &a_Value->m_Value.u_Integer.u_Integer, sizeof(a_Value->m_Value));
+  l_Object->m_Type = k_ObjectInteger;
+  l_Object->m_Value.u_Integer.m_Signedness
+    = a_Value->m_Value.u_Integer.m_Signedness;
+  l_Object->m_Value.u_Integer.m_Size = a_Value->m_Value.u_Integer.m_Size;
+  memcpy(
+    &l_Object->m_Value.u_Integer.u_Integer,
+    &a_Value->m_Value.u_Integer.u_Integer,
+    sizeof(a_Value->m_Value)
+  );
   *a_Object = l_Object;
 }
 
@@ -537,12 +455,12 @@ CObjectInteget_SetValue(
     {
       if(l_Signedness == k_IntegerSigned)
       {
-        int8_t *l_Value                                 = va_arg(l_Args, int8_t *);
+        int8_t *l_Value = va_arg(l_Args, int8_t *);
         a_Object->m_Value.u_Integer.u_Integer.m_Signed8 = *l_Value;
       }
       else
       {
-        uint8_t *l_Value                                  = va_arg(l_Args, uint8_t *);
+        uint8_t *l_Value = va_arg(l_Args, uint8_t *);
         a_Object->m_Value.u_Integer.u_Integer.m_Unsigned8 = *l_Value;
       }
       break;
@@ -551,12 +469,12 @@ CObjectInteget_SetValue(
     {
       if(l_Signedness == k_IntegerSigned)
       {
-        int16_t *l_Value                                 = va_arg(l_Args, int16_t *);
+        int16_t *l_Value = va_arg(l_Args, int16_t *);
         a_Object->m_Value.u_Integer.u_Integer.m_Signed16 = *l_Value;
       }
       else
       {
-        uint16_t *l_Value                                  = va_arg(l_Args, uint16_t *);
+        uint16_t *l_Value = va_arg(l_Args, uint16_t *);
         a_Object->m_Value.u_Integer.u_Integer.m_Unsigned16 = *l_Value;
       }
       break;
@@ -565,12 +483,12 @@ CObjectInteget_SetValue(
     {
       if(l_Signedness == k_IntegerSigned)
       {
-        int32_t *l_Value                                 = va_arg(l_Args, int32_t *);
+        int32_t *l_Value = va_arg(l_Args, int32_t *);
         a_Object->m_Value.u_Integer.u_Integer.m_Signed32 = *l_Value;
       }
       else
       {
-        uint32_t *l_Value                                  = va_arg(l_Args, uint32_t *);
+        uint32_t *l_Value = va_arg(l_Args, uint32_t *);
         a_Object->m_Value.u_Integer.u_Integer.m_Unsigned32 = *l_Value;
       }
       break;
@@ -579,12 +497,12 @@ CObjectInteget_SetValue(
     {
       if(l_Signedness == k_IntegerSigned)
       {
-        int64_t *l_Value                                 = va_arg(l_Args, int64_t *);
+        int64_t *l_Value = va_arg(l_Args, int64_t *);
         a_Object->m_Value.u_Integer.u_Integer.m_Signed64 = *l_Value;
       }
       else
       {
-        uint64_t *l_Value                                  = va_arg(l_Args, uint64_t *);
+        uint64_t *l_Value = va_arg(l_Args, uint64_t *);
         a_Object->m_Value.u_Integer.u_Integer.m_Unsigned64 = *l_Value;
       }
       break;
@@ -621,17 +539,20 @@ CObjectFloating_New(
   {
     case k_Floating32 :
     {
-      l_Object->m_Value.u_Floating.u_Floating.m_Floating32 = va_arg(l_Args, float);
+      l_Object->m_Value.u_Floating.u_Floating.m_Floating32
+        = va_arg(l_Args, float);
       break;
     }
     case k_Floating64 :
     {
-      l_Object->m_Value.u_Floating.u_Floating.m_Floating64 = va_arg(l_Args, double);
+      l_Object->m_Value.u_Floating.u_Floating.m_Floating64
+        = va_arg(l_Args, double);
       break;
     }
     case k_Floating80 :
     {
-      l_Object->m_Value.u_Floating.u_Floating.m_Floating80 = va_arg(l_Args, long double);
+      l_Object->m_Value.u_Floating.u_Floating.m_Floating80
+        = va_arg(l_Args, long double);
       break;
     }
   }
@@ -652,7 +573,11 @@ CObjectFloating_NewFrom(
   assert(l_Object != NULL);
   l_Object->m_Type                    = k_ObjectFloating;
   l_Object->m_Value.u_Floating.m_Size = a_Value->m_Value.u_Floating.m_Size;
-  memcpy(&l_Object->m_Value.u_Floating.u_Floating, &a_Value->m_Value.u_Floating.u_Floating, sizeof(a_Value->m_Value));
+  memcpy(
+    &l_Object->m_Value.u_Floating.u_Floating,
+    &a_Value->m_Value.u_Floating.u_Floating,
+    sizeof(a_Value->m_Value)
+  );
   *a_Object = l_Object;
 }
 
@@ -697,7 +622,7 @@ CObjectFloating_GetValue(
     case k_Floating80 :
     {
       long double *l_Value = va_arg(l_Args, long double *);
-      *l_Value             = a_Object->m_Value.u_Floating.u_Floating.m_Floating80;
+      *l_Value = a_Object->m_Value.u_Floating.u_Floating.m_Floating80;
       break;
     }
   }
@@ -720,19 +645,19 @@ CObjectFloating_SetValue(
   {
     case k_Floating32 :
     {
-      float *l_Value                                       = va_arg(l_Args, float *);
+      float *l_Value = va_arg(l_Args, float *);
       a_Object->m_Value.u_Floating.u_Floating.m_Floating32 = *l_Value;
       break;
     }
     case k_Floating64 :
     {
-      double *l_Value                                      = va_arg(l_Args, double *);
+      double *l_Value = va_arg(l_Args, double *);
       a_Object->m_Value.u_Floating.u_Floating.m_Floating64 = *l_Value;
       break;
     }
     case k_Floating80 :
     {
-      long double *l_Value                                 = va_arg(l_Args, long double *);
+      long double *l_Value = va_arg(l_Args, long double *);
       a_Object->m_Value.u_Floating.u_Floating.m_Floating80 = *l_Value;
       break;
     }
@@ -763,9 +688,14 @@ CObjectString_New(
   l_Object->m_Type                      = k_ObjectString;
   l_Object->m_Value.u_String.m_Size     = a_Length;
   l_Object->m_Value.u_String.m_Capacity = a_Length + 1;
-  l_Object->m_Value.u_String.m_String   = malloc(sizeof(wchar_t) * l_Object->m_Value.u_String.m_Capacity);
+  l_Object->m_Value.u_String.m_String
+    = malloc(sizeof(wchar_t) * l_Object->m_Value.u_String.m_Capacity);
   assert(l_Object->m_Value.u_String.m_String != NULL);
-  wcscpy_s(l_Object->m_Value.u_String.m_String, l_Object->m_Value.u_String.m_Capacity, a_String);
+  wcscpy_s(
+    l_Object->m_Value.u_String.m_String,
+    l_Object->m_Value.u_String.m_Capacity,
+    a_String
+  );
   *a_Object = l_Object;
 }
 
@@ -783,10 +713,13 @@ CObjectString_NewFrom(
   l_Object->m_Type                      = k_ObjectString;
   l_Object->m_Value.u_String.m_Size     = a_Value->m_Value.u_String.m_Size;
   l_Object->m_Value.u_String.m_Capacity = a_Value->m_Value.u_String.m_Capacity;
-  l_Object->m_Value.u_String.m_String   = malloc(sizeof(wchar_t) * a_Value->m_Value.u_String.m_Capacity);
+  l_Object->m_Value.u_String.m_String
+    = malloc(sizeof(wchar_t) * a_Value->m_Value.u_String.m_Capacity);
   assert(l_Object->m_Value.u_String.m_String != NULL);
   wcscpy_s(
-    l_Object->m_Value.u_String.m_String, a_Value->m_Value.u_String.m_Capacity, a_Value->m_Value.u_String.m_String
+    l_Object->m_Value.u_String.m_String,
+    a_Value->m_Value.u_String.m_Capacity,
+    a_Value->m_Value.u_String.m_String
   );
   *a_Object = l_Object;
 }
@@ -888,7 +821,8 @@ CObjectString_GetStorageEnd(
   assert(a_Object->m_Type == k_ObjectString);
   assert(a_Object->m_Value.u_String.m_String != NULL);
   assert(a_String != NULL);
-  *a_String = a_Object->m_Value.u_String.m_String + a_Object->m_Value.u_String.m_Size;
+  *a_String
+    = a_Object->m_Value.u_String.m_String + a_Object->m_Value.u_String.m_Size;
 }
 
 void
@@ -907,8 +841,10 @@ CObjectString_Shrink(
       a_Object->m_Value.u_String.m_Size = a_Size;
     }
     a_Object->m_Value.u_String.m_Capacity = a_Size + 1;
-    a_Object->m_Value.u_String.m_String   = (wchar_t *
-    ) realloc(a_Object->m_Value.u_String.m_String, sizeof(wchar_t) * a_Object->m_Value.u_String.m_Capacity);
+    a_Object->m_Value.u_String.m_String   = (wchar_t *) realloc(
+      a_Object->m_Value.u_String.m_String,
+      sizeof(wchar_t) * a_Object->m_Value.u_String.m_Capacity
+    );
     assert(a_Object->m_Value.u_String.m_String != NULL);
   }
 }
@@ -925,8 +861,10 @@ CObjectString_Grow(
   if(a_Size > a_Object->m_Value.u_String.m_Capacity)
   {
     a_Object->m_Value.u_String.m_Capacity = a_Size + 1;
-    a_Object->m_Value.u_String.m_String   = (wchar_t *
-    ) realloc(a_Object->m_Value.u_String.m_String, sizeof(wchar_t) * a_Object->m_Value.u_String.m_Capacity);
+    a_Object->m_Value.u_String.m_String   = (wchar_t *) realloc(
+      a_Object->m_Value.u_String.m_String,
+      sizeof(wchar_t) * a_Object->m_Value.u_String.m_Capacity
+    );
     assert(a_Object->m_Value.u_String.m_String != NULL);
   }
 }
@@ -941,9 +879,12 @@ CObjectString_Fit(
   assert(a_Object->m_Value.u_String.m_String != NULL);
   if(a_Object->m_Value.u_String.m_Size < a_Object->m_Value.u_String.m_Capacity)
   {
-    a_Object->m_Value.u_String.m_Capacity = a_Object->m_Value.u_String.m_Size + 1;
-    a_Object->m_Value.u_String.m_String   = (wchar_t *
-    ) realloc(a_Object->m_Value.u_String.m_String, sizeof(CObject) * a_Object->m_Value.u_String.m_Capacity);
+    a_Object->m_Value.u_String.m_Capacity
+      = a_Object->m_Value.u_String.m_Size + 1;
+    a_Object->m_Value.u_String.m_String = (wchar_t *) realloc(
+      a_Object->m_Value.u_String.m_String,
+      sizeof(CObject) * a_Object->m_Value.u_String.m_Capacity
+    );
   }
 }
 
@@ -955,7 +896,11 @@ CObjectString_Clear(
   assert(a_Object != NULL);
   assert(a_Object->m_Type == k_ObjectString);
   assert(a_Object->m_Value.u_String.m_String != NULL);
-  wmemset(a_Object->m_Value.u_String.m_String, 0, sizeof(wchar_t) * a_Object->m_Value.u_String.m_Capacity);
+  wmemset(
+    a_Object->m_Value.u_String.m_String,
+    0,
+    sizeof(wchar_t) * a_Object->m_Value.u_String.m_Capacity
+  );
   a_Object->m_Value.u_String.m_Size = 0;
 }
 
@@ -972,11 +917,14 @@ CObjectString_InsertAt(
   assert(a_Index < a_Object->m_Value.u_String.m_Size);
   assert(a_Value != NULL);
   assert(a_Value->m_Type == k_ObjectString);
-  uint64_t l_Size = a_Object->m_Value.u_String.m_Size + a_Value->m_Value.u_String.m_Size;
+  uint64_t l_Size
+    = a_Object->m_Value.u_String.m_Size + a_Value->m_Value.u_String.m_Size;
   CObjectString_Grow(a_Object, l_Size);
   wmemmove_s(
-    &a_Object->m_Value.u_String.m_String[a_Index + a_Value->m_Value.u_String.m_Size],
-    a_Object->m_Value.u_String.m_Capacity - (a_Index + a_Value->m_Value.u_String.m_Size),
+    &a_Object->m_Value.u_String
+       .m_String[a_Index + a_Value->m_Value.u_String.m_Size],
+    a_Object->m_Value.u_String.m_Capacity
+      - (a_Index + a_Value->m_Value.u_String.m_Size),
     &a_Object->m_Value.u_String.m_String[a_Index],
     a_Object->m_Value.u_String.m_Capacity - a_Index
   );
@@ -1023,7 +971,8 @@ CObjectString_PushBack(
   assert(a_Object->m_Value.u_String.m_String != NULL);
   assert(a_Value != NULL);
   assert(a_Value->m_Type == k_ObjectString);
-  uint64_t l_Size = a_Object->m_Value.u_String.m_Size + a_Value->m_Value.u_String.m_Size;
+  uint64_t l_Size
+    = a_Object->m_Value.u_String.m_Size + a_Value->m_Value.u_String.m_Size;
   CObjectString_Grow(a_Object, l_Size);
   wmemcpy_s(
     &a_Object->m_Value.u_String.m_String[a_Object->m_Value.u_String.m_Size],
@@ -1045,7 +994,8 @@ CObjectString_PushFront(
   assert(a_Object->m_Value.u_String.m_String != NULL);
   assert(a_Value != NULL);
   assert(a_Value->m_Type == k_ObjectString);
-  uint64_t l_Size = a_Object->m_Value.u_String.m_Size + a_Value->m_Value.u_String.m_Size;
+  uint64_t l_Size
+    = a_Object->m_Value.u_String.m_Size + a_Value->m_Value.u_String.m_Size;
   CObjectString_Grow(a_Object, l_Size);
   wmemmove_s(
     &a_Object->m_Value.u_String.m_String[a_Value->m_Value.u_String.m_Size],
@@ -1074,7 +1024,11 @@ CObjectString_PopBack(
   assert(a_Size > 0);
   assert(a_Size <= a_Object->m_Value.u_String.m_Size);
   a_Object->m_Value.u_String.m_Size -= a_Size;
-  wmemset(&a_Object->m_Value.u_String.m_String[a_Object->m_Value.u_String.m_Size], 0, sizeof(wchar_t) * a_Size);
+  wmemset(
+    &a_Object->m_Value.u_String.m_String[a_Object->m_Value.u_String.m_Size],
+    0,
+    sizeof(wchar_t) * a_Size
+  );
   CObjectString_Shrink(a_Object, a_Object->m_Value.u_String.m_Size);
 }
 
@@ -1097,7 +1051,11 @@ CObjectString_PopFront(
   );
   a_Object->m_Value.u_String.m_Size -= a_Size;
   CObjectString_Shrink(a_Object, a_Object->m_Value.u_String.m_Size);
-  wmemset(&a_Object->m_Value.u_String.m_String[a_Object->m_Value.u_String.m_Size], 0, sizeof(wchar_t) * a_Size);
+  wmemset(
+    &a_Object->m_Value.u_String.m_String[a_Object->m_Value.u_String.m_Size],
+    0,
+    sizeof(wchar_t) * a_Size
+  );
   CObjectString_Shrink(a_Object, a_Object->m_Value.u_String.m_Size);
 }
 
@@ -1122,7 +1080,10 @@ CObjectString_FindFirst(
     *a_Found = false;
     return;
   }
-  wchar_t *l_Char = wcsstr(&a_Object->m_Value.u_String.m_String[a_Start], a_Value->m_Value.u_String.m_String);
+  wchar_t *l_Char = wcsstr(
+    &a_Object->m_Value.u_String.m_String[a_Start],
+    a_Value->m_Value.u_String.m_String
+  );
   if(l_Char == NULL)
   {
     *a_Found = false;
@@ -1153,7 +1114,10 @@ CObjectString_FindLast(
     *a_Found = false;
     return;
   }
-  wchar_t *l_Char = wcsstr(&a_Object->m_Value.u_String.m_String[a_Start], a_Value->m_Value.u_String.m_String);
+  wchar_t *l_Char = wcsstr(
+    &a_Object->m_Value.u_String.m_String[a_Start],
+    a_Value->m_Value.u_String.m_String
+  );
   if(l_Char == NULL)
   {
     *a_Found = false;
@@ -1183,11 +1147,15 @@ CObjectString_Replace(
   }
   uint64_t l_WhatEnd     = l_WhatPos + l_WhatSize;
   uint64_t l_WhatLen     = a_Object->m_Value.u_String.m_Size - l_WhatEnd;
-  uint64_t l_WhatNewSize = a_Object->m_Value.u_String.m_Size - l_WhatSize + a_With->m_Value.u_String.m_Size;
+  uint64_t l_WhatNewSize = a_Object->m_Value.u_String.m_Size
+                         - l_WhatSize
+                         + a_With->m_Value.u_String.m_Size;
   CObjectString_Grow(a_Object, l_WhatNewSize);
   wmemmove_s(
-    &a_Object->m_Value.u_String.m_String[l_WhatPos + a_With->m_Value.u_String.m_Size],
-    a_Object->m_Value.u_String.m_Capacity - (l_WhatPos + a_With->m_Value.u_String.m_Size),
+    &a_Object->m_Value.u_String
+       .m_String[l_WhatPos + a_With->m_Value.u_String.m_Size],
+    a_Object->m_Value.u_String.m_Capacity
+      - (l_WhatPos + a_With->m_Value.u_String.m_Size),
     &a_Object->m_Value.u_String.m_String[l_WhatEnd],
     l_WhatLen
   );
@@ -1216,13 +1184,17 @@ CObjectString_Compare(
   {
     *a_Comparison = k_CObjectStringComparisonLessThan;
   }
-  else if(a_Object1->m_Value.u_String.m_Size > a_Object2->m_Value.u_String.m_Size)
+  else if(a_Object1->m_Value.u_String.m_Size
+          > a_Object2->m_Value.u_String.m_Size)
   {
     *a_Comparison = k_CObjectStringComparisonGreaterThan;
   }
   else
   {
-    *a_Comparison = wcscmp(a_Object1->m_Value.u_String.m_String, a_Object2->m_Value.u_String.m_String) == 0
+    *a_Comparison = wcscmp(
+                      a_Object1->m_Value.u_String.m_String,
+                      a_Object2->m_Value.u_String.m_String
+                    ) == 0
                     ? k_CObjectStringComparisonEqual
                     : k_CObjectStringComparisonLessThan;
   }
@@ -1245,9 +1217,12 @@ CObjectString_StartsWith(
     *a_StartsWith = false;
     return;
   }
-  *a_StartsWith
-    = wcsncmp(a_Object->m_Value.u_String.m_String, a_Value->m_Value.u_String.m_String, a_Value->m_Value.u_String.m_Size)
-   == 0;
+  *a_StartsWith = wcsncmp(
+                    a_Object->m_Value.u_String.m_String,
+                    a_Value->m_Value.u_String.m_String,
+                    a_Value->m_Value.u_String.m_Size
+                  )
+               == 0;
 }
 
 void
@@ -1267,13 +1242,14 @@ CObjectString_EndsWith(
     *a_EndsWith = false;
     return;
   }
-  *a_EndsWith
-    = wcsncmp(
-        &a_Object->m_Value.u_String.m_String[a_Object->m_Value.u_String.m_Size - a_Value->m_Value.u_String.m_Size],
-        a_Value->m_Value.u_String.m_String,
-        a_Value->m_Value.u_String.m_Size
-      )
-   == 0;
+  *a_EndsWith = wcsncmp(
+                  &a_Object->m_Value.u_String.m_String
+                     [a_Object->m_Value.u_String.m_Size
+                      - a_Value->m_Value.u_String.m_Size],
+                  a_Value->m_Value.u_String.m_String,
+                  a_Value->m_Value.u_String.m_Size
+                )
+             == 0;
 }
 
 void
@@ -1293,7 +1269,11 @@ CObjectString_Contains(
     *a_Contains = false;
     return;
   }
-  *a_Contains = wcsstr(a_Object->m_Value.u_String.m_String, a_Value->m_Value.u_String.m_String) != NULL;
+  *a_Contains
+    = wcsstr(
+        a_Object->m_Value.u_String.m_String, a_Value->m_Value.u_String.m_String
+      )
+   != NULL;
 }
 
 CObject *
@@ -1309,26 +1289,11 @@ CObjectString_Substring(
   assert(a_Start < a_End);
   assert(a_End <= a_Object->m_Value.u_String.m_Size);
   CObject *l_Object;
-  CObjectString_New(a_End - a_Start, &a_Object->m_Value.u_String.m_String[a_Start], &l_Object);
+  CObjectString_New(
+    a_End - a_Start, &a_Object->m_Value.u_String.m_String[a_Start], &l_Object
+  );
   return l_Object;
 }
-
-void
-CObjectList_New(
-  // NOLINTBEGIN(bugprone-easily-swappable-parameters)
-  CObjectType a_ItemType,
-  uint64_t    a_ItemCount,
-  // NOLINTEND(bugprone-easily-swappable-parameters)
-  CObject   **a_Object,
-  ...
-);
-
-void
-CObjectList_PushBack(
-  CObject *a_Object,
-  uint64_t a_Count,
-  ...
-);
 
 void
 CObjectString_Split(
@@ -1356,7 +1321,8 @@ CObjectString_Split(
     {
       if(l_End > l_Start)
       {
-        CObject *l_Substring = CObjectString_Substring(a_Object, l_Start, l_End);
+        CObject *l_Substring
+          = CObjectString_Substring(a_Object, l_Start, l_End);
         assert(l_Substring != NULL);
         CObjectList_PushBack(l_List, 1, l_Substring);
       }
@@ -1365,7 +1331,9 @@ CObjectString_Split(
   }
   if(l_Start < a_Object->m_Value.u_String.m_Size)
   {
-    CObject *l_Substring = CObjectString_Substring(a_Object, l_Start, a_Object->m_Value.u_String.m_Size);
+    CObject *l_Substring = CObjectString_Substring(
+      a_Object, l_Start, a_Object->m_Value.u_String.m_Size
+    );
     assert(l_Substring != NULL);
     CObjectList_PushBack(l_List, 1, l_Substring);
   }
@@ -1385,11 +1353,14 @@ CObjectString_Extend(
   assert(a_Index < a_Object->m_Value.u_String.m_Size);
   assert(a_Value != NULL);
   assert(a_Value->m_Type == k_ObjectString);
-  uint64_t l_Size = a_Object->m_Value.u_String.m_Size + a_Value->m_Value.u_String.m_Size;
+  uint64_t l_Size
+    = a_Object->m_Value.u_String.m_Size + a_Value->m_Value.u_String.m_Size;
   CObjectString_Grow(a_Object, l_Size);
   wmemmove_s(
-    &a_Object->m_Value.u_String.m_String[a_Index + a_Value->m_Value.u_String.m_Size],
-    a_Object->m_Value.u_String.m_Capacity - (a_Index + a_Value->m_Value.u_String.m_Size),
+    &a_Object->m_Value.u_String
+       .m_String[a_Index + a_Value->m_Value.u_String.m_Size],
+    a_Object->m_Value.u_String.m_Capacity
+      - (a_Index + a_Value->m_Value.u_String.m_Size),
     &a_Object->m_Value.u_String.m_String[a_Index],
     a_Object->m_Value.u_String.m_Capacity - a_Index
   );
@@ -1413,8 +1384,9 @@ CObjectString_Swap(
   assert(a_Object->m_Value.u_String.m_String != NULL);
   assert(a_Index1 < a_Object->m_Value.u_String.m_Size);
   assert(a_Index2 < a_Object->m_Value.u_String.m_Size);
-  wchar_t l_Tmp                                 = a_Object->m_Value.u_String.m_String[a_Index1];
-  a_Object->m_Value.u_String.m_String[a_Index1] = a_Object->m_Value.u_String.m_String[a_Index2];
+  wchar_t l_Tmp = a_Object->m_Value.u_String.m_String[a_Index1];
+  a_Object->m_Value.u_String.m_String[a_Index1]
+    = a_Object->m_Value.u_String.m_String[a_Index2];
   a_Object->m_Value.u_String.m_String[a_Index2] = l_Tmp;
 }
 
@@ -1536,7 +1508,8 @@ CObjectList_New(
   l_Object->m_Type                     = k_ObjectList;
   l_Object->m_Value.u_List.m_ItemType  = a_ItemType;
   l_Object->m_Value.u_List.m_ItemCount = a_ItemCount;
-  l_Object->m_Value.u_List.m_Items     = (CObject **) malloc(sizeof(CObject *) * a_ItemCount);
+  l_Object->m_Value.u_List.m_Items
+    = (CObject **) malloc(sizeof(CObject *) * a_ItemCount);
   assert(l_Object->m_Value.u_List.m_Items != NULL);
   va_list l_Args;
   va_start(l_Args, a_ItemCount);
@@ -1576,9 +1549,11 @@ CObjectList_NewFrom(
     {
       CObject *l_Object;
       CObjectList_New(k_ObjectString, 0, &l_Object, NULL);
-      for(uint64_t l_Index = 0; l_Index < a_Value->m_Value.u_String.m_Size; l_Index++)
+      for(uint64_t l_Index = 0; l_Index < a_Value->m_Value.u_String.m_Size;
+          l_Index++)
       {
-        CObject *l_Char = CObjectString_Substring(a_Value, l_Index, l_Index + 1);
+        CObject *l_Char
+          = CObjectString_Substring(a_Value, l_Index, l_Index + 1);
         assert(l_Char != NULL);
         CObjectList_PushBack(l_Object, 1, l_Char);
       }
@@ -1588,17 +1563,30 @@ CObjectList_NewFrom(
     case k_ObjectPair :
     {
       CObject *l_Object;
-      CObjectList_New(k_ObjectPair, 2, &l_Object, a_Value->m_Value.u_Pair.m_Left, a_Value->m_Value.u_Pair.m_Right);
+      CObjectList_New(
+        k_ObjectPair,
+        2,
+        &l_Object,
+        a_Value->m_Value.u_Pair.m_Left,
+        a_Value->m_Value.u_Pair.m_Right
+      );
       *a_Object = l_Object;
       break;
     }
     case k_ObjectList :
     {
       CObject *l_Object;
-      CObjectList_New(a_Value->m_Value.u_List.m_ItemType, a_Value->m_Value.u_List.m_ItemCount, &l_Object, NULL);
-      for(uint64_t l_Index = 0; l_Index < a_Value->m_Value.u_List.m_ItemCount; l_Index++)
+      CObjectList_New(
+        a_Value->m_Value.u_List.m_ItemType,
+        a_Value->m_Value.u_List.m_ItemCount,
+        &l_Object,
+        NULL
+      );
+      for(uint64_t l_Index = 0; l_Index < a_Value->m_Value.u_List.m_ItemCount;
+          l_Index++)
       {
-        l_Object->m_Value.u_List.m_Items[l_Index] = a_Value->m_Value.u_List.m_Items[l_Index];
+        l_Object->m_Value.u_List.m_Items[l_Index]
+          = a_Value->m_Value.u_List.m_Items[l_Index];
       }
       *a_Object = l_Object;
       break;
@@ -1607,10 +1595,14 @@ CObjectList_NewFrom(
     {
       CObject *l_Object;
       CObjectList_New(k_ObjectDictionary, 0, &l_Object, NULL);
-      for(uint64_t l_Index = 0; l_Index < a_Value->m_Value.u_Dictionary.m_PairCount; l_Index++)
+      for(uint64_t l_Index = 0;
+          l_Index < a_Value->m_Value.u_Dictionary.m_PairCount;
+          l_Index++)
       {
         CObject *l_Pair;
-        CObjectList_GetAt(a_Value->m_Value.u_Dictionary.m_Pairs, l_Index, &l_Pair);
+        CObjectList_GetAt(
+          a_Value->m_Value.u_Dictionary.m_Pairs, l_Index, &l_Pair
+        );
         CObject *l_Key, *l_Value;
         CObjectPair_GetValue(l_Pair, &l_Key, &l_Value);
         CObjectList_PushBack(l_Object, 2, l_Key, l_Value);
@@ -1667,7 +1659,9 @@ CObjectList_GetLast(
   assert(a_Object->m_Value.u_List.m_Items != NULL);
   assert(a_Value != NULL);
   CObject *l_Last;
-  CObjectList_GetAt(a_Object, a_Object->m_Value.u_List.m_ItemCount - 1, &l_Last);
+  CObjectList_GetAt(
+    a_Object, a_Object->m_Value.u_List.m_ItemCount - 1, &l_Last
+  );
   *a_Value = l_Last;
 }
 
@@ -1683,7 +1677,8 @@ CObjectList_GetIndex(
   assert(a_Object->m_Value.u_List.m_Items != NULL);
   assert(a_Item != NULL);
   assert(a_Index != NULL);
-  for(uint64_t l_Index = 0; l_Index < a_Object->m_Value.u_List.m_ItemCount; l_Index++)
+  for(uint64_t l_Index = 0; l_Index < a_Object->m_Value.u_List.m_ItemCount;
+      l_Index++)
   {
     if(a_Object->m_Value.u_List.m_Items[l_Index] == a_Item)
     {
@@ -1741,7 +1736,8 @@ CObjectList_GetStorageEnd(
   assert(a_Object->m_Type == k_ObjectList);
   assert(a_Object->m_Value.u_List.m_Items != NULL);
   assert(a_StorageEnd != NULL);
-  *a_StorageEnd = a_Object->m_Value.u_List.m_Items + a_Object->m_Value.u_List.m_ItemCount;
+  *a_StorageEnd
+    = a_Object->m_Value.u_List.m_Items + a_Object->m_Value.u_List.m_ItemCount;
 }
 
 void
@@ -1767,7 +1763,9 @@ CObjectList_Shrink(
   assert(a_Object->m_Value.u_List.m_Items != NULL);
   if(a_Size < a_Object->m_Value.u_List.m_ItemCapacity)
   {
-    for(uint64_t l_Index = a_Object->m_Value.u_List.m_ItemCount; l_Index > a_Size; l_Index--)
+    for(uint64_t l_Index = a_Object->m_Value.u_List.m_ItemCount;
+        l_Index > a_Size;
+        l_Index--)
     {
       CObject_Free(a_Object->m_Value.u_List.m_Items[l_Index]);
     }
@@ -1776,8 +1774,10 @@ CObjectList_Shrink(
       a_Object->m_Value.u_List.m_ItemCount = a_Size;
     }
     a_Object->m_Value.u_List.m_ItemCapacity = a_Size;
-    a_Object->m_Value.u_List.m_Items        = (CObject **
-    ) realloc(a_Object->m_Value.u_List.m_Items, sizeof(CObject *) * a_Object->m_Value.u_List.m_ItemCapacity);
+    a_Object->m_Value.u_List.m_Items        = (CObject **) realloc(
+      a_Object->m_Value.u_List.m_Items,
+      sizeof(CObject *) * a_Object->m_Value.u_List.m_ItemCapacity
+    );
     assert(a_Object->m_Value.u_List.m_Items != NULL);
   }
 }
@@ -1794,8 +1794,10 @@ CObjectList_Grow(
   if(a_Size > a_Object->m_Value.u_List.m_ItemCapacity)
   {
     a_Object->m_Value.u_List.m_ItemCapacity = a_Size;
-    a_Object->m_Value.u_List.m_Items        = (CObject **
-    ) realloc(a_Object->m_Value.u_List.m_Items, sizeof(CObject *) * a_Object->m_Value.u_List.m_ItemCapacity);
+    a_Object->m_Value.u_List.m_Items        = (CObject **) realloc(
+      a_Object->m_Value.u_List.m_Items,
+      sizeof(CObject *) * a_Object->m_Value.u_List.m_ItemCapacity
+    );
     assert(a_Object->m_Value.u_List.m_Items != NULL);
   }
 }
@@ -1808,7 +1810,8 @@ CObjectList_Clear(
   assert(a_Object != NULL);
   assert(a_Object->m_Type == k_ObjectList);
   assert(a_Object->m_Value.u_List.m_Items != NULL);
-  for(uint64_t l_Index = 0; l_Index < a_Object->m_Value.u_List.m_ItemCount; l_Index++)
+  for(uint64_t l_Index = 0; l_Index < a_Object->m_Value.u_List.m_ItemCount;
+      l_Index++)
   {
     CObject_Free(a_Object->m_Value.u_List.m_Items[l_Index]);
   }
@@ -1823,11 +1826,15 @@ CObjectList_Fit(
   assert(a_Object != NULL);
   assert(a_Object->m_Type == k_ObjectList);
   assert(a_Object->m_Value.u_List.m_Items != NULL);
-  if(a_Object->m_Value.u_List.m_ItemCount < a_Object->m_Value.u_List.m_ItemCapacity)
+  if(a_Object->m_Value.u_List.m_ItemCount
+     < a_Object->m_Value.u_List.m_ItemCapacity)
   {
-    a_Object->m_Value.u_List.m_ItemCapacity = a_Object->m_Value.u_List.m_ItemCount;
-    a_Object->m_Value.u_List.m_Items        = (CObject **
-    ) realloc(a_Object->m_Value.u_List.m_Items, sizeof(CObject *) * a_Object->m_Value.u_List.m_ItemCapacity);
+    a_Object->m_Value.u_List.m_ItemCapacity
+      = a_Object->m_Value.u_List.m_ItemCount;
+    a_Object->m_Value.u_List.m_Items = (CObject **) realloc(
+      a_Object->m_Value.u_List.m_Items,
+      sizeof(CObject *) * a_Object->m_Value.u_List.m_ItemCapacity
+    );
     assert(a_Object->m_Value.u_List.m_Items != NULL);
   }
 }
@@ -1847,17 +1854,23 @@ CObjectList_InsertAt(
   assert(a_Count > 0);
   assert(a_Index + a_Count <= a_Object->m_Value.u_List.m_ItemCount);
   CObjectList_Grow(a_Object, a_Object->m_Value.u_List.m_ItemCount + a_Count);
-  for(uint64_t l_Index = a_Object->m_Value.u_List.m_ItemCount; l_Index > a_Index; l_Index--)
+  for(uint64_t l_Index = a_Object->m_Value.u_List.m_ItemCount;
+      l_Index > a_Index;
+      l_Index--)
   {
-    a_Object->m_Value.u_List.m_Items[l_Index] = a_Object->m_Value.u_List.m_Items[l_Index - a_Count];
+    a_Object->m_Value.u_List.m_Items[l_Index]
+      = a_Object->m_Value.u_List.m_Items[l_Index - a_Count];
   }
   va_list l_Args;
   va_start(l_Args, a_Count);
   for(uint64_t l_Index = 0; l_Index < a_Count; l_Index++)
   {
-    a_Object->m_Value.u_List.m_Items[a_Index + l_Index] = va_arg(l_Args, CObject *);
+    a_Object->m_Value.u_List.m_Items[a_Index + l_Index]
+      = va_arg(l_Args, CObject *);
     CObjectType l_Type;
-    CObject_GetType(a_Object->m_Value.u_List.m_Items[a_Index + l_Index], &l_Type);
+    CObject_GetType(
+      a_Object->m_Value.u_List.m_Items[a_Index + l_Index], &l_Type
+    );
     assert(l_Type == a_Object->m_Value.u_List.m_ItemType);
   }
   va_end(l_Args);
@@ -1887,9 +1900,12 @@ CObjectList_RemoveAt(
     *l_Item = a_Object->m_Value.u_List.m_Items[a_Index + l_Index];
   }
   va_end(l_Args);
-  for(uint64_t l_Index = a_Index; l_Index < a_Object->m_Value.u_List.m_ItemCount - a_Count; l_Index++)
+  for(uint64_t l_Index = a_Index;
+      l_Index < a_Object->m_Value.u_List.m_ItemCount - a_Count;
+      l_Index++)
   {
-    a_Object->m_Value.u_List.m_Items[l_Index] = a_Object->m_Value.u_List.m_Items[l_Index + a_Count];
+    a_Object->m_Value.u_List.m_Items[l_Index]
+      = a_Object->m_Value.u_List.m_Items[l_Index + a_Count];
   }
   a_Object->m_Value.u_List.m_ItemCount -= a_Count;
   CObjectList_Shrink(a_Object, a_Object->m_Value.u_List.m_ItemCount);
@@ -1909,7 +1925,8 @@ CObjectList_PushBack(
   CObjectList_Grow(a_Object, a_Object->m_Value.u_List.m_ItemCount + a_Count);
   va_list l_Args;
   va_start(l_Args, a_Count);
-  for(uint64_t l_Index = a_Object->m_Value.u_List.m_ItemCount; l_Index < a_Object->m_Value.u_List.m_ItemCount + a_Count;
+  for(uint64_t l_Index = a_Object->m_Value.u_List.m_ItemCount;
+      l_Index < a_Object->m_Value.u_List.m_ItemCount + a_Count;
       l_Index++)
   {
     a_Object->m_Value.u_List.m_Items[l_Index] = va_arg(l_Args, CObject *);
@@ -1935,9 +1952,12 @@ CObjectList_PushFront(
   CObjectList_Grow(a_Object, a_Object->m_Value.u_List.m_ItemCount + a_Count);
   va_list l_Args;
   va_start(l_Args, a_Count);
-  for(uint64_t l_Index = a_Count; l_Index < a_Object->m_Value.u_List.m_ItemCount + a_Count; l_Index++)
+  for(uint64_t l_Index = a_Count;
+      l_Index < a_Object->m_Value.u_List.m_ItemCount + a_Count;
+      l_Index++)
   {
-    a_Object->m_Value.u_List.m_Items[l_Index] = a_Object->m_Value.u_List.m_Items[l_Index - a_Count];
+    a_Object->m_Value.u_List.m_Items[l_Index]
+      = a_Object->m_Value.u_List.m_Items[l_Index - a_Count];
   }
   for(uint64_t l_Index = 0; l_Index < a_Count; l_Index++)
   {
@@ -1964,7 +1984,8 @@ CObjectList_PopBack(
   assert(a_Count <= a_Object->m_Value.u_List.m_ItemCount);
   va_list l_Args;
   va_start(l_Args, a_Count);
-  for(uint64_t l_Index = a_Object->m_Value.u_List.m_ItemCount - a_Count; l_Index < a_Object->m_Value.u_List.m_ItemCount;
+  for(uint64_t l_Index = a_Object->m_Value.u_List.m_ItemCount - a_Count;
+      l_Index < a_Object->m_Value.u_List.m_ItemCount;
       l_Index++)
   {
     CObject **l_Item = va_arg(l_Args, CObject **);
@@ -1996,9 +2017,12 @@ CObjectList_PopFront(
     *l_Item = a_Object->m_Value.u_List.m_Items[l_Index];
   }
   va_end(l_Args);
-  for(uint64_t l_Index = a_Count; l_Index < a_Object->m_Value.u_List.m_ItemCount; l_Index++)
+  for(uint64_t l_Index = a_Count;
+      l_Index < a_Object->m_Value.u_List.m_ItemCount;
+      l_Index++)
   {
-    a_Object->m_Value.u_List.m_Items[l_Index - a_Count] = a_Object->m_Value.u_List.m_Items[l_Index];
+    a_Object->m_Value.u_List.m_Items[l_Index - a_Count]
+      = a_Object->m_Value.u_List.m_Items[l_Index];
   }
   a_Object->m_Value.u_List.m_ItemCount -= a_Count;
 }
@@ -2015,8 +2039,9 @@ CObjectList_Swap(
   assert(a_Object->m_Value.u_List.m_Items != NULL);
   assert(a_Index1 < a_Object->m_Value.u_List.m_ItemCount);
   assert(a_Index2 < a_Object->m_Value.u_List.m_ItemCount);
-  CObject *l_Tmp                             = a_Object->m_Value.u_List.m_Items[a_Index1];
-  a_Object->m_Value.u_List.m_Items[a_Index1] = a_Object->m_Value.u_List.m_Items[a_Index2];
+  CObject *l_Tmp = a_Object->m_Value.u_List.m_Items[a_Index1];
+  a_Object->m_Value.u_List.m_Items[a_Index1]
+    = a_Object->m_Value.u_List.m_Items[a_Index2];
   a_Object->m_Value.u_List.m_Items[a_Index2] = l_Tmp;
 }
 
@@ -2027,7 +2052,8 @@ CObjectList_Free(
 {
   assert(a_Object != NULL);
   assert(a_Object->m_Type == k_ObjectList);
-  for(uint64_t l_Index = 0; l_Index < a_Object->m_Value.u_List.m_ItemCount; l_Index++)
+  for(uint64_t l_Index = 0; l_Index < a_Object->m_Value.u_List.m_ItemCount;
+      l_Index++)
   {
     CObject_Free(a_Object->m_Value.u_List.m_Items[l_Index]);
   }
@@ -2052,7 +2078,9 @@ CObjectDictionary_New(
   l_Object->m_Type                               = k_ObjectDictionary;
   l_Object->m_Value.u_Dictionary.m_PairLeftType  = a_LeftType;
   l_Object->m_Value.u_Dictionary.m_PairRightType = a_RightType;
-  CObjectList_New(k_ObjectPair, 0, &l_Object->m_Value.u_Dictionary.m_Pairs, NULL);
+  CObjectList_New(
+    k_ObjectPair, 0, &l_Object->m_Value.u_Dictionary.m_Pairs, NULL
+  );
   va_list l_Args;
   va_start(l_Args, a_PairCount);
   for(uint64_t l_Index = 0; l_Index < a_PairCount; l_Index++)
@@ -2075,9 +2103,11 @@ CObjectDictionary_New(
     CObjectList_PushBack(l_Object->m_Value.u_Dictionary.m_Pairs, 1, l_Arg_);
   }
   va_end(l_Args);
-  l_Object->m_Value.u_Dictionary.m_PairCount    = l_Object->m_Value.u_Dictionary.m_Pairs->m_Value.u_List.m_ItemCount;
-  l_Object->m_Value.u_Dictionary.m_PairCapacity = l_Object->m_Value.u_Dictionary.m_Pairs->m_Value.u_List.m_ItemCapacity;
-  *a_Object                                     = l_Object;
+  l_Object->m_Value.u_Dictionary.m_PairCount
+    = l_Object->m_Value.u_Dictionary.m_Pairs->m_Value.u_List.m_ItemCount;
+  l_Object->m_Value.u_Dictionary.m_PairCapacity
+    = l_Object->m_Value.u_Dictionary.m_Pairs->m_Value.u_List.m_ItemCapacity;
+  *a_Object = l_Object;
 }
 
 void
@@ -2103,11 +2133,22 @@ CObjectDictionary_NewFrom(
     case k_ObjectList :
     {
       CObject *l_Object;
-      CObjectDictionary_New(a_Value->m_Value.u_List.m_ItemType, a_Value->m_Value.u_List.m_ItemType, 0, &l_Object, NULL);
-      for(uint64_t l_Index = 0; l_Index < a_Value->m_Value.u_List.m_ItemCount; l_Index += 2)
+      CObjectDictionary_New(
+        a_Value->m_Value.u_List.m_ItemType,
+        a_Value->m_Value.u_List.m_ItemType,
+        0,
+        &l_Object,
+        NULL
+      );
+      for(uint64_t l_Index  = 0; l_Index < a_Value->m_Value.u_List.m_ItemCount;
+          l_Index          += 2)
       {
         CObject *l_Arg;
-        CObjectPair_New(a_Value->m_Value.u_List.m_Items[l_Index], a_Value->m_Value.u_List.m_Items[l_Index + 1], &l_Arg);
+        CObjectPair_New(
+          a_Value->m_Value.u_List.m_Items[l_Index],
+          a_Value->m_Value.u_List.m_Items[l_Index + 1],
+          &l_Arg
+        );
         CObjectList_PushBack(l_Object->m_Value.u_Dictionary.m_Pairs, 1, l_Arg);
       }
       *a_Object = l_Object;
@@ -2117,12 +2158,21 @@ CObjectDictionary_NewFrom(
     {
       CObject *l_Object;
       CObjectDictionary_New(
-        a_Value->m_Value.u_Dictionary.m_PairLeftType, a_Value->m_Value.u_Dictionary.m_PairRightType, 0, &l_Object, NULL
+        a_Value->m_Value.u_Dictionary.m_PairLeftType,
+        a_Value->m_Value.u_Dictionary.m_PairRightType,
+        0,
+        &l_Object,
+        NULL
       );
-      for(uint64_t l_Index = 0; l_Index < a_Value->m_Value.u_Dictionary.m_Pairs->m_Value.u_List.m_ItemCount; l_Index++)
+      for(uint64_t l_Index = 0;
+          l_Index
+          < a_Value->m_Value.u_Dictionary.m_Pairs->m_Value.u_List.m_ItemCount;
+          l_Index++)
       {
         CObject *l_Arg;
-        CObjectList_GetAt(a_Value->m_Value.u_Dictionary.m_Pairs, l_Index, &l_Arg);
+        CObjectList_GetAt(
+          a_Value->m_Value.u_Dictionary.m_Pairs, l_Index, &l_Arg
+        );
         CObjectList_PushBack(l_Object->m_Value.u_Dictionary.m_Pairs, 1, l_Arg);
       }
       *a_Object = l_Object;
@@ -2198,10 +2248,4 @@ CObject_Free(
       break;
     }
   }
-}
-
-void
-CObject_Initialize()
-{
-  crypto_shorthash_keygen(g_SObject_GetId_Key); 
 }
