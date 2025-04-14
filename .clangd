@@ -1,0 +1,45 @@
+CompileFlags:
+  Remove: [-W*]
+  Add:
+    - --target=x86_64-pc-windows-gnu
+    - -D_UNICODE
+    - -DUNICODE
+    - -xc
+    - -std=c23
+    - -Wall
+    - -Wextra
+    - -Wshadow
+    - -Wno-varargs
+  Compiler: clang
+
+Index:
+  StandardLibrary: Yes
+
+Diagnostics:
+  # Suppress:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
+  ClangTidy:
+    FastCheckFilter: None
+    Add:
+      - modernize*
+      - bugprone*
+    # Remove: modernize-use-trailing-return-type
+    # CheckOptions:
+    #   readability-identifier-naming.VariableCase: CamelCase
+
+Completion:
+  AllScopes: true
+  ArgumentLists: FullPlaceholders
+
+InlayHints:
+  BlockEnd: No
+  Designators: Yes
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+  DefaultArguments: Yes
+  TypeNameLimit: 24
+
+Hover:
+  ShowAKA: Yes
