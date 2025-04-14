@@ -1,0 +1,43 @@
+pool compile_pool
+  depth = 4
+
+pool link_pool
+  depth = 2
+
+cc = clang
+ar = llvm-ar
+cdflags = -UNDEBUG
+cwflags = -Wno-varargs
+cflags = $cdflags $cwflags -O2
+arflags = rcs
+ldflags = -lsodium
+
+rule compile_static
+  depfile = $out.d
+  deps = gcc
+  command = $cc $cflags -static -c $in -o $out -MD -MF $out.d
+  description = Compiling $in
+  pool = compile_pool
+
+rule compile_shared
+  depfile = $out.d
+  deps = gcc
+  command = $cc $cflags -c $in -o $out -MD -MF $out.d
+  description = Compiling $in
+  pool = compile_pool
+
+rule link
+  command = $cc $cflags $ldflags -shared -o $out $in
+  description = Linking $out
+  pool = link_pool
+
+rule archive
+  command = $ar $arflags $out $in
+  description = Archiving $out
+  pool = link_pool
+
+build CObject.lib.obj: compile_static CObject.c | CObject.h
+build CObject.lib: archive CObject.lib.obj
+
+build CObject.dll.obj: compile_shared CObject.c | CObject.h
+build CObject.dll: link CObject.dll.obj
