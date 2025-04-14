@@ -6,6 +6,7 @@
 
 ### Reference:
  * Retrieve type: `CObject_GetType`.
+ * Initialize internal key: `CObject_Initialize`.
  * Retrieve identificators:
    * Naive: `CObject_GetId` - Doesn't consider object's value, every object gets an unique id.
    * Reasonable: `CObject_GetIdReasonable` - Objects with the same type and value get the same id.
