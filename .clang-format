@@ -24,38 +24,13 @@ AccessModifierOffset: 2
 AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: Left
 
-AlignConsecutiveAssignments: 
-  Enabled: true
-  AcrossEmptyLines: true
-  AcrossComments: true
-  AlignCompound: true
-  AlignFunctionDeclarations: true
-  AlignFunctionPointers: true
-  PadOperators: true
+AlignConsecutiveAssignments: None
 
-AlignConsecutiveDeclarations:
-  Enabled: true
-  AcrossEmptyLines: true
-  AcrossComments: true
-  AlignCompound: true
-  AlignFunctionDeclarations: true
-  AlignFunctionPointers: true
-  PadOperators: true
+AlignConsecutiveDeclarations: None
 
-AlignConsecutiveMacros:
-  Enabled: true
-  AcrossEmptyLines: true
-  AcrossComments: true
-  AlignCompound: true
-  AlignFunctionDeclarations: true
-  AlignFunctionPointers: true
-  PadOperators: true
+AlignConsecutiveMacros: None
 
-AlignConsecutiveShortCaseStatements:
-  Enabled: true
-  AcrossEmptyLines: true
-  AcrossComments: true
-  AlignCaseColons: true
+AlignConsecutiveShortCaseStatements: None
 
 AlignEscapedNewlines: Right
 
