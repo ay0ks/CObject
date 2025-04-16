@@ -1,0 +1,33 @@
+cc = clang
+ar = llvm-ar
+cdflags =
+cwflags =
+cflags = $cdflags $cwflags -O2
+arflags = rcs
+ldflags =
+
+rule compile_static
+  depfile = $out.d
+  deps = gcc
+  command = $cc $cflags -static -c $in -o $out -MD -MF $out.d
+  description = Compiling $in
+
+rule compile_shared
+  depfile = $out.d
+  deps = gcc
+  command = $cc $cflags -c $in -o $out -MD -MF $out.d
+  description = Compiling $in
+
+rule link
+  command = $cc $cflags $ldflags -shared -o $out $in
+  description = Linking $out
+
+rule archive
+  command = $ar $arflags $out $in
+  description = Archiving $out
+
+build CDebugging.lib.obj: compile_static CDebugging.c | CDebugging.h
+build CDebugging.lib: archive CDebugging.lib.obj
+
+build CDebugging.dll.obj: compile_shared CDebugging.c | CDebugging.h
+build CDebugging.dll: link CDebugging.dll.obj
