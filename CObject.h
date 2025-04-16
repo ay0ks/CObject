@@ -94,7 +94,11 @@ typedef struct CObjectWorld
 } CObjectWorld;
 
 void
-CObjectWorld_New(CObjectWorld *a_World);
+CObjectWorld_New(
+  CObjectWorld *a_World,
+  CObjectWorldAllocatorKind a_Kind,
+  ...
+);
 
 void
 CObjectWorld_Free(CObjectWorld *a_World);

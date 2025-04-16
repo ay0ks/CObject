@@ -69,15 +69,26 @@ CObjectWorldAllocator_Free(CObjectWorldAllocator *a_Allocator);
 
 void
 CObjectWorld_New(
-  CObjectWorld *a_World
+  CObjectWorld *a_World,
+  CObjectWorldAllocatorKind a_Kind,
+  ...
 )
 {
   assert(a_World != NULL, "World is null");
-  COb
+  va_list l_Args;
+  va_start(l_Args, a_Kind);
+  CObjectWorldAllocator_New(&a_World->m_Allocator, a_Kind, va_arg(l_Args, uint64_t));
+  va_end(l_Args);
+  crypto_shorthash_keygen(a_World->m_Secret);
 }
 
 void
-CObjectWorld_Free(CObjectWorld *a_World);
+CObjectWorld_Free(
+  CObjectWorld *a_World
+)
+{
+  assert(a_World != NULL)
+}
 
 static arena
 newarena(

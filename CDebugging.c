@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <signal.h>
+#include <wchar.t>
 
 #if defined(_WIN32) || defined(_WIN64)
 #  define WIN32_LEAN_AND_MEAN
@@ -23,10 +24,10 @@ CDebugging_Assert(
 {
   va_list args;
   va_start(args, a_Expression);
-  const char *const a_Message = va_arg(args, char *);
-  fprintf_s(stderr, "%s:%llu Assertion failed in %s", a_File, a_Line, a_Function, a_Expression);
-  if(a_Message != NULL) { fprintf_s(stderr, " (%s)", a_Message); }
-  fprintf_s(stderr, "\n");
+  const wchar_t *const a_Message = va_arg(args, wchar_t *);
+  fwprintf_s(stderr, L"%s:%llu Assertion failed in %s", a_File, a_Line, a_Function, a_Expression);
+  if(a_Message != NULL) { fwprintf_s(stderr, L" (%s)", a_Message); }
+  fwprintf_s(stderr, L"\n");
   va_end(args);
   CDebugging_Abort();
 }
