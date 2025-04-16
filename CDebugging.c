@@ -24,7 +24,7 @@ CDebugging_Assert(
 )
 {
   va_list l_Args, l_Args_, l_Args__;
-  va_start(l_Args, a_Expression);
+  va_start(l_Args, a_Abort);
   const wchar_t *const l_Message = va_arg(l_Args, wchar_t *);
   va_copy(l_Args_, l_Args);
   va_copy(l_Args__, l_Args);
