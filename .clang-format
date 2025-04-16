@@ -138,11 +138,6 @@ MaxEmptyLinesToKeep: 1
 NamespaceIndentation: All
 PPIndentWidth: 2
 PackConstructorInitializers: Never
-PenaltyBreakAssignment: 0
-PenaltyBreakBeforeFirstCallParameter: 0
-PenaltyBreakOpenParenthesis: 0
-PenaltyExcessCharacter: 1
-PenaltyReturnTypeOnItsOwnLine: 0
 PointerAlignment: Right
 QualifierAlignment: Custom
 QualifierOrder:
@@ -155,13 +150,12 @@ QualifierOrder:
   - type
   - restrict
 ReferenceAlignment: Right
-ReflowComments: Always
+ReflowComments: true
 RemoveEmptyLinesInUnwrappedLines: true
 RemoveParentheses: ReturnStatement
 RemoveSemicolon: true
 RequiresClausePosition: OwnLine
 RequiresExpressionIndentation: OuterScope
-SeparateDefinitionBlocks: Always
 ShortNamespaceLines: 0
 SortIncludes: Never
 SortUsingDeclarations: Lexicographic
@@ -191,3 +185,10 @@ SpacesInParensOptions:
   Other: false
 SpacesInSquareBrackets: false
 WrapNamespaceBodyWithEmptyLines: Never
+
+PenaltyBreakAssignment: 0
+PenaltyBreakBeforeFirstCallParameter: 0
+PenaltyBreakOpenParenthesis: 0
+PenaltyExcessCharacter: 1
+PenaltyReturnTypeOnItsOwnLine: 0
+PenaltyBreakComment: 0
