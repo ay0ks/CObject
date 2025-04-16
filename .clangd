@@ -23,6 +23,9 @@ Diagnostics:
     Add:
       - modernize*
       - bugprone*
+    # Remove: modernize-use-trailing-return-type
+    # CheckOptions:
+    #   readability-identifier-naming.VariableCase: CamelCase
 
 Completion:
   AllScopes: true
