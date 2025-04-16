@@ -6,11 +6,11 @@
 
 #define assert($Expression, ...)                                               \
   ((void)((!!($Expression))                                                    \
-          || (CDebugging_Assert(__FILE__, __func__, __LINE__, #$Expression, __VA_ARGS__))))
+          || (CDebugging_Assert(__FILE__, __func__, __LINE__, #$Expression, ## __VA_ARGS__), 0)))
 
 #define assert_equals($Left, $Right, ...)                                      \
   ((void)((!!($Left == $Right))                                                \
-          || (CDebugging_Assert(__FILE__, __func__, __LINE__, #$Left " == " #$Right, __VA_ARGS__))))
+          || (CDebugging_Assert(__FILE__, __func__, __LINE__, #$Left " == " #$Right, ## __VA_ARGS__), 0)))
 
 void
 CDebugging_Assert(
