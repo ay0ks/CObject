@@ -5,7 +5,7 @@ CompileFlags:
     - -D_UNICODE
     - -DUNICODE
     - -xc
-    - -std=c23
+    - -std=gnu23
     - -Wall
     - -Wextra
     - -Wshadow
