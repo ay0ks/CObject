@@ -6,11 +6,11 @@
 
 #define assert($Expression, ...)                                               \
   ((void)((!!($Expression))                                                    \
-          || (CDebugging_Assert(__FILE__, __func__, __LINE__, #$Expression, ## __VA_ARGS__), 0)))
+          || (CDebugging_Assert(__FILE__, __func__, __LINE__, #$Expression, true, ## __VA_ARGS__), 0)))
 
-#define assert_equals($Left, $Right, ...)                                      \
-  ((void)((!!($Left == $Right))                                                \
-          || (CDebugging_Assert(__FILE__, __func__, __LINE__, #$Left " == " #$Right, ## __VA_ARGS__), 0)))
+#define assert_soft($Expression, ...)                                          \
+  ((void)((!!($Expression))                                                    \
+          || (CDebugging_Assert(__FILE__, __func__, __LINE__, #$Expression, false, ## __VA_ARGS__), 0)))
 
 void
 CDebugging_Assert(
@@ -18,6 +18,7 @@ CDebugging_Assert(
   const char *const a_Function,
   const uint64_t a_Line,
   const char *const a_Expression,
+  bool a_Abort,
   ...
 );
 

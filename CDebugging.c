@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <signal.h>
-#include <wchar.t>
+#include <wchar.h>
 
 #if defined(_WIN32) || defined(_WIN64)
 #  define WIN32_LEAN_AND_MEAN
@@ -19,17 +19,42 @@ CDebugging_Assert(
   const char *const a_Function,
   const uint64_t a_Line,
   const char *const a_Expression,
+  bool a_Abort,
   ...
 )
 {
-  va_list args;
-  va_start(args, a_Expression);
-  const wchar_t *const a_Message = va_arg(args, wchar_t *);
+  va_list l_Args, l_Args_, l_Args__;
+  va_start(l_Args, a_Expression);
+  const wchar_t *const l_Message = va_arg(l_Args, wchar_t *);
+  va_copy(l_Args_, l_Args);
+  va_copy(l_Args__, l_Args);
   fwprintf_s(stderr, L"%s:%llu Assertion failed in %s", a_File, a_Line, a_Function, a_Expression);
-  if(a_Message != NULL) { fwprintf_s(stderr, L" (%s)", a_Message); }
+  if(l_Message != NULL)
+  {
+    wchar_t *l_MessageBuffer;
+    uint64_t l_MessageBufferSize =
+#if defined(_WIN32) || defined(_WIN64)
+      _vscwprintf(l_Message, l_Args_)
+#elif defined(__linux__)
+      /** NOTE: this may fail, needs testing */
+      vswprintf(NULL, 0, l_Message, l_Args_)   // DevSkim: ignore DS154189
+#endif
+      ;
+    l_MessageBuffer = (wchar_t *)malloc(sizeof(wchar_t) * l_MessageBufferSize);
+    if(l_MessageBuffer == NULL)
+    {
+      /** Well.. */
+      CDebugging_Abort();
+    }
+    vswprintf_s(l_MessageBuffer, l_MessageBufferSize, l_Message, l_Args__);
+    fwprintf_s(stderr, L" (%s)", l_MessageBuffer);
+    free(l_MessageBuffer);
+  }
   fwprintf_s(stderr, L"\n");
-  va_end(args);
-  CDebugging_Abort();
+  va_end(l_Args__);
+  va_end(l_Args_);
+  va_end(l_Args);
+  if(a_Abort) { CDebugging_Abort(); }
 }
 
 void
