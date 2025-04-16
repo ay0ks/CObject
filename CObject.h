@@ -20,21 +20,18 @@ typedef enum CObjectWorldAllocatorKind: uint8_t
   k_AllocatorKind_Arena
 } CObjectWorldAllocatorKind;
 
-typedef struct CObjectWorldAllocatorChunkHeader
+typedef struct CObjectWorldAllocatorChunk
 {
-  uint64_t m_OffsetBegin, m_OffsetEnd;
+  uint64_t m_Size, m_Alignment;
+  uint8_t m_Inner[];
 } CObjectWorldAllocatorChunk;
 
 typedef struct CObjectWorldAllocator
 {
   CObjectWorldAllocatorKind m_Kind;
 
-  char *m_Base, *m_BaseCommit, *m_BaseEnd;
-  struct
-  {
-    uint64_t m_Initial, m_Maximum, m_Current;
-    float m_ResizeFactor;
-  } m_BaseSize;
+  uint8_t *m_Arena, *m_ArenaCommit, *m_ArenaEnd;
+  uint64_t m_ArenaSize, m_ArenaCapacity;
 } CObjectWorldAllocator;
 
 const uint64_t c_CObjectWorldAllocator_PageSize = 1 << 26;
@@ -49,6 +46,7 @@ CObjectWorldAllocator_New(
 void
 CObjectWorldAllocator_Allocate(
   CObjectWorldAllocator *a_Allocator,
+  uint64_t a_Alignment,
   uint64_t a_Size,
   uint64_t a_Count,
   void **a_AddressOut
@@ -58,6 +56,7 @@ void
 CObjectWorldAllocator_Reallocate(
   CObjectWorldAllocator *a_Allocator,
   void *a_Address,
+  uint64_t a_Alignment,
   uint64_t a_Size,
   uint64_t a_Count,
   void **a_AddressOut
@@ -66,21 +65,7 @@ CObjectWorldAllocator_Reallocate(
 void
 CObjectWorldAllocator_Deallocate(
   CObjectWorldAllocator *a_Allocator,
-  void *a_Address
-);
-
-void
-CObjectWorldAllocator_SystemReserve(
-  CObjectWorldAllocator *a_Allocator,
-  uint64_t a_Size,
-  void **a_AddressOut
-);
-
-void
-CObjectWorldAllocator_SystemCommit(
-  CObjectWorldAllocator *a_Allocator,
-  void *a_Address,
-  uint64_t a_Size
+  void **a_Address
 );
 
 void
