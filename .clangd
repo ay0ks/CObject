@@ -16,18 +16,13 @@ Index:
   StandardLibrary: Yes
 
 Diagnostics:
-  # Suppress:
   UnusedIncludes: Strict
-  MissingIncludes: Strict
+  MissingIncludes: None
   ClangTidy:
     FastCheckFilter: None
     Add:
       - modernize*
       - bugprone*
-    # Remove: modernize-use-trailing-return-type
-    # CheckOptions:
-    #   readability-identifier-naming.VariableCase: CamelCase
-
 Completion:
   AllScopes: true
   ArgumentLists: FullPlaceholders
