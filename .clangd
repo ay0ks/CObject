@@ -1,8 +1,9 @@
 CompileFlags:
   Remove: [-W*]
   Add:
+    - -xc
+    - -std=gnu23
     - -DUNICODE
-    - -xc -std=gnu23
     - -Wall
     - -Wextra
     - -Wshadow
