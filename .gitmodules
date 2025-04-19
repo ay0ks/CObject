@@ -1,0 +1,3 @@
+[submodule "cdbg"]
+	path = cdbg
+	url = git@github.com:ay0ks/cdbg
