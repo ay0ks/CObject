@@ -1,0 +1,43 @@
+pool compile_pool
+  depth = 4
+
+pool link_pool
+  depth = 2
+
+cc = clang
+ar = llvm-ar
+cdflags = -UNDEBUG
+cwflags = 
+cflags = $cdflags $cwflags -O2
+arflags = rcs
+ldflags =
+
+rule compile_static
+  depfile = $out.d
+  deps = gcc
+  command = $cc $cflags -static -c $in -o $out -MD -MF $out.d
+  description = Compiling $in
+  pool = compile_pool
+
+rule compile_shared
+  depfile = $out.d
+  deps = gcc
+  command = $cc $cflags -c $in -o $out -MD -MF $out.d
+  description = Compiling $in
+  pool = compile_pool
+
+rule link
+  command = $cc $cflags $ldflags -shared -o $out $in
+  description = Linking $out
+  pool = link_pool
+
+rule archive
+  command = $ar $arflags $out $in
+  description = Archiving $out
+  pool = link_pool
+
+build cdbg.lib.obj: compile_static cdbg.c | cdbg.h
+build cdbg.lib: archive cdbg.lib.obj
+
+build cdbg.dll.obj: compile_shared cdbg.c | cdbg.h
+build cdbg.dll: link cdbg.dll.obj
