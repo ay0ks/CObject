@@ -25,17 +25,18 @@ cdbg_assert(
   const char *const a_function,
   uint64_t a_line,
   const char *const a_expression,
+  bool a_abort,
   ...
 )
 {
   va_list l_args;
-  va_start(l_args, a_expression);
+  va_start(l_args, a_abort);
   const char *const l_message = va_arg(l_args, char *);
   cdbg_fprintf(stderr, "%s:%llu Assertion failed in %s", a_file, a_line, a_function, a_expression);
   if(l_message != NULL) { cdbg_fprintf(stderr, " (%s)", l_message); }
   cdbg_fprintf(stderr, "\n");
   va_end(l_args);
-  cdbg_abort();
+  if(a_abort) { cdbg_abort(); }
 }
 
 void

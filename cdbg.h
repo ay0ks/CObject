@@ -6,11 +6,11 @@
 
 #define assert($Expression, ...)                                               \
   ((void)((!!($Expression))                                                    \
-          || (cdbg_assert(__FILE__, __func__, __LINE__, #$Expression, __VA_ARGS__))))
+          || (cdbg_assert(__FILE__, __func__, __LINE__, #$Expression, true, ##__VA_ARGS__), 0)))
 
-#define assert_equals($Left, $Right, ...)                                      \
-  ((void)((!!($Left == $Right))                                                \
-          || (cdbg_assert(__FILE__, __func__, __LINE__, #$Left " == " #$Right, __VA_ARGS__))))
+#define assert_soft($Expression, ...)                                          \
+  ((void)((!!($Expression))                                                    \
+          || (cdbg_assert(__FILE__, __func__, __LINE__, #$Expression, false, ##__VA_ARGS__), 0)))
 
 void
 cdbg_assert(
@@ -18,6 +18,7 @@ cdbg_assert(
   const char *a_function,
   uint64_t a_line,
   const char *a_expression,
+  bool a_abort,
   ...
 );
 
