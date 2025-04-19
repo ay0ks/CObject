@@ -14,10 +14,10 @@
 
 void
 cdbg_assert(
-  const char *ac_file,
-  const char *ac_function,
-  const uint64_t ac_line,
-  const char *ac_expression,
+  const char *a_file,
+  const char *a_function,
+  uint64_t a_line,
+  const char *a_expression,
   ...
 );
 
@@ -29,33 +29,33 @@ typedef struct cdbg_breakpoint_s
   bool m_armed;
   struct
   {
-    const char *mc_file;
-    const char *mc_function;
-    const uint64_t mc_line;
+    const char *m_file;
+    const char *m_function;
+    uint64_t m_line;
   } m_set_site;
   struct
   {
     jmp_buf m_buffer;
-    const char *mc_file;
-    const char *mc_function;
-    const uint64_t mc_line;
+    const char *m_file;
+    const char *m_function;
+    uint64_t m_line;
   } m_jump_site;
 } cdbg_breakpoint_t;
 
 void
 cdbg_breakpoint_set(
   cdbg_breakpoint_t *a_breakpoint,
-  const char *ac_file,
-  const char *ac_function,
-  const uint64_t ac_line
+  const char *a_file,
+  const char *a_function,
+  uint64_t a_line
 );
 
 void
 cdbg_breakpoint_break(
   cdbg_breakpoint_t *a_breakpoint,
-  const char *ac_file,
-  const char *ac_function,
-  const uint64_t ac_line
+  const char *a_file,
+  const char *a_function,
+  uint64_t a_line
 );
 
 void
