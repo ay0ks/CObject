@@ -1,4 +1,0 @@
-[submodule "CDebugging"]
-	path = CDebugging
-	url = git@github.com:ay0ks/CDebugging
-	branch = main
