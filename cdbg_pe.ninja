@@ -8,7 +8,7 @@ cc = clang
 ar = llvm-ar
 cdflags = -UNDEBUG
 cwflags = 
-cflags = $cdflags $cwflags -O2
+cflags = -std=gnu23 $cdflags $cwflags -O2
 arflags = rcs
 ldflags =
 
