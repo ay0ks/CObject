@@ -1,15 +1,11 @@
 CompileFlags:
   Remove: [-W*]
   Add:
-    - --target=x86_64-pc-windows-gnu
-    - -D_UNICODE
     - -DUNICODE
-    - -xc
-    - -std=gnu23
+    - -xc -std=gnu23
     - -Wall
     - -Wextra
     - -Wshadow
-    - -Wno-varargs
   Compiler: clang
 
 Index:
@@ -20,12 +16,6 @@ Diagnostics:
   MissingIncludes: None
   ClangTidy:
     FastCheckFilter: None
-    Add:
-      - modernize*
-      - bugprone*
-    # Remove: modernize-use-trailing-return-type
-    # CheckOptions:
-    #   readability-identifier-naming.VariableCase: CamelCase
 
 Completion:
   AllScopes: true
