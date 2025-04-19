@@ -1,0 +1,37 @@
+subninja ./cdbg_pe.ninja
+
+cc = clang
+ar = llvm-ar
+cdflags =
+cwflags =
+cflags = $cdflags $cwflags -O2
+arflags = rcs
+ldflags = -L. -cdbg -lsodium
+
+rule compile_static
+  depfile = $out.d
+  deps = gcc
+  command = $cc $cflags -static -c $in -o $out -MD -MF $out.d
+  description = Compiling $in
+
+rule compile_shared
+  depfile = $out.d
+  deps = gcc
+  command = $cc $cflags -c $in -o $out -MD -MF $out.d
+  description = Compiling $in
+
+rule link
+  command = $cc $cflags $ldflags -shared -o $out $in
+  description = Linking $out
+
+rule archive
+  command = $ar $arflags $out $in
+  description = Archiving $out
+
+build cobj.lib.cobjalloc.obj: compile_static cobjalloc.c | cobjalloc.h
+build cobj.lib.cobjwrld.obj: compile_static cobjwrld.c | cobjwrld.h
+build cobj.lib: archive cobj.lib.cobjalloc.obj cobj.lib.cobjwrld.obj
+
+build cobj.dll.cobjalloc.obj: compile_shared cobjalloc.c | cobjalloc.h
+build cobj.dll.cobjwrld.obj: compile_shared cobjwrld.c | cobjwrld.h
+build cobj.dll: link cobj.dll.cobjalloc.obj cobj.dll.cobjwrld.obj
